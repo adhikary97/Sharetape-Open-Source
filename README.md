@@ -25,7 +25,7 @@ Once downloaded unzip in your project directory.
 
 ## Execution
 There are 4 flags
-- `-v` or `-video` is the video path
+- `-v` or `-video` is the video path. Only `.mov` or `.mp4`
 - `-c` or `-crop` crops the video to 9:16 format, default is `False`
 - `-ca` or `-captions` adds captions, default is `False`
 - `-cl` or `-clipLength` is length of clip, default is `30 seconds`
