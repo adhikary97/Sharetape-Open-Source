@@ -20,9 +20,7 @@ def main():
     nltk.download("averaged_perceptron_tagger", quiet=True)
 
     SetLogLevel(-1)
-    model = Model(
-        model_path="/Users/parasadhikary/Downloads/video_clipper/vosk-model-en-us-0.42-gigaspeech"
-    )
+    model = Model(model_path="vosk-model-en-us-0.42-gigaspeech")
 
     video_id = str(uuid.uuid4())
     os.makedirs(f"{video_id}/clips")
