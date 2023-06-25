@@ -35,8 +35,8 @@ def main():
         f"{video_id}/words.json",
         f"{video_id}/subtitles.srt",
         int(args.clipLength),
-        bool(args.crop),
-        bool(args.captions),
+        args.crop == "True",
+        args.captions == "True",
         model,
     )
     shartape.extract_transcript()
