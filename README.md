@@ -2,6 +2,10 @@
 
 This script uses NLP to determine the 10 best topics from a podcast or long form video. Then based on these topics it cuts 30-60 second clips for TikTok, Instagram, or YouTube Shorts. You can even crop the video to 9:16 format and add captions if needed.
 
+## Demo
+
+[Sharetape Open Source Demo](https://www.youtube.com/watch?v=lPDF0VG9sbk)
+
 ## Install homebrew dependencies
 
 ```
