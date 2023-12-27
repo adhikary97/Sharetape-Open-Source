@@ -11,6 +11,7 @@ from sharetape import Sharetape
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-v", "--video", type=str, required=True, default="")
+    parser.add_argument("-vb", "--video_b", type=str, required=False, default="")
     parser.add_argument("-c", "--crop", type=str, required=False, default=False)
     parser.add_argument("-ca", "--captions", type=str, required=False, default=False)
     parser.add_argument("-cl", "--clipLength", type=str, required=False, default=30)
@@ -27,6 +28,7 @@ def main():
 
     shartape = Sharetape(
         args.video,
+        args.video_b,
         f"{video_id}/audio.wav",
         f"{video_id}/mono_audio.wav",
         f"{video_id}/transcript.txt",

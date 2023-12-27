@@ -11,6 +11,7 @@ import srt
 from moviepy.video.tools.subtitles import SubtitlesClip
 from nltk.corpus import stopwords
 from vosk import KaldiRecognizer
+from tqdm import tqdm
 
 from videocrop import *
 
@@ -19,19 +20,21 @@ TAGS = ["NN", "NNP", "NNS", "VB", "VBD", "VBG", "VBN", "VBP", "VBZ"]
 
 class Sharetape:
     def __init__(
-        self,
-        video,
-        audio,
-        mono_audio,
-        transcript,
-        words,
-        subtitles,
-        clip_length,
-        crop,
-        captions,
-        model,
+            self,
+            video,
+            video_b,
+            audio,
+            mono_audio,
+            transcript,
+            words,
+            subtitles,
+            clip_length,
+            crop,
+            captions,
+            model,
     ) -> None:
         self.video = video
+        self.video_b = video_b if video_b else None
         self.audio = audio
         self.mono_audio = mono_audio
         self.transcript = transcript
@@ -56,11 +59,23 @@ class Sharetape:
 
     def cut_video_clip(self, output_file, start_time=0):
         video = mp.VideoFileClip(self.video)
+        end = min(start_time + self.clip_length, video.end)
+        clip = video.subclip(start_time, end)
 
-        clip = video.subclip(start_time, min(start_time + self.clip_length, video.end))
+        if self.video_b:
+            video_b = mp.VideoFileClip(self.video_b).resize(height=video.size[1] // 2).volumex(0)
+            clip_b = video_b.subclip(start_time, end)
+            final_clip = mp.clips_array([[clip], [clip_b]])
+        else:
+            final_clip = clip
 
-        clip.write_videofile(
-            output_file, fps=30, threads=5, codec="libx264", verbose=False, logger=None
+        final_clip.write_videofile(
+            output_file,
+            fps=30,
+            threads=5,
+            codec="libx264",
+            verbose=False,
+            logger=None
         )
 
     def get_topics(self):
@@ -123,12 +138,12 @@ class Sharetape:
             overlap = False
 
             for j, (retained_index, retained_sentence, retained_score) in enumerate(
-                retained_topics
+                    retained_topics
             ):
                 if (
-                    len(set(sentence.split()) & set(retained_sentence.split()))
-                    / len(set(sentence.split()))
-                    > 0.1
+                        len(set(sentence.split()) & set(retained_sentence.split()))
+                        / len(set(sentence.split()))
+                        > 0.1
                 ):
                     overlap = True
                     if score > retained_score:
@@ -178,7 +193,7 @@ class Sharetape:
         topic_match.sort(key=lambda x: x["score"], reverse=True)
         # print(topic_match)
 
-        for t in topic_match[0 : min(len(topic_match), clip_number)]:
+        for t in tqdm(topic_match[0: min(len(topic_match), clip_number)]):
             if not self.captions and not self.crop:
                 self.cut_video_clip(
                     f'{dir_name}/clips/clip_{dir_name}_{t["ind"]}.mov',
@@ -191,32 +206,36 @@ class Sharetape:
                 )
 
     def cut_video_clip_with_captions(
-        self,
-        output_file,
-        start_time=0,
-        font_style="Verdana",
-        font_size=32,
-        font_color="white",
-        font_stroke_color="white",
-        font_stroke_width=1,
-        font_box_loc=(800, 110),
-        bg_box_loc=(815, 125),
-        bg_color=(0, 0, 0),
-        bg_opacity=1,
-        final_vid_y_pos=900,
+            self,
+            output_file,
+            start_time=0,
+            font_style="Verdana",
+            font_size=32,
+            font_color="white",
+            font_stroke_color="white",
+            font_stroke_width=1,
+            font_box_loc=(800, 110),
+            bg_box_loc=(815, 125),
+            bg_color=(0, 0, 0),
+            bg_opacity=1,
+            final_vid_y_pos=900,
     ):
         video = mp.VideoFileClip(self.video)
         end = min(start_time + self.clip_length, video.end)
         clip = video.subclip(start_time, end)
 
-        post_path = ""
-        clip_vertical = clip
+        if self.video_b:
+            video_b = mp.VideoFileClip(self.video_b).resize(height=video.size[1] // 2).volumex(0)
+            clip_b = video_b.subclip(start_time, end)
+            final_clip = mp.clips_array([[clip], [clip_b]])
+        else:
+            final_clip = clip
+
         if self.crop:
             post_path = (
                 f"{output_file.split('.')[0]}_pre_vertical.{output_file.split('.')[1]}"
             )
-
-            clip_vertical = process_video(clip, post_path)
+            final_clip = process_video(final_clip, post_path)
 
         words = self.load_data()
         filtered = []
@@ -227,7 +246,7 @@ class Sharetape:
         WORDS_PER_LINE = 7
         subs = []
         for j in range(0, len(filtered), WORDS_PER_LINE):
-            line = filtered[j : j + WORDS_PER_LINE]
+            line = filtered[j: j + WORDS_PER_LINE]
             s = srt.Subtitle(
                 index=len(subs),
                 content=" ".join([l["word"] for l in line]),
@@ -239,13 +258,13 @@ class Sharetape:
         subtitle = srt.compose(subs)
 
         with open(
-            f"{output_file.split('.')[0]}_caption.srt", "w+", encoding="utf8"
+                f"{output_file.split('.')[0]}_caption.srt", "w+", encoding="utf8"
         ) as f:
             f.writelines(subtitle)
 
-        if not self.crop and self.captions:
-            result = self.subtitle_clip(
-                clip,
+        if self.captions:
+            final_clip = self.subtitle_clip(
+                final_clip,
                 output_file,
                 font_style,
                 font_size,
@@ -258,63 +277,32 @@ class Sharetape:
                 bg_opacity,
                 final_vid_y_pos,
             )
-            result.write_videofile(
-                output_file,
-                fps=30,
-                threads=5,
-                codec="libx264",
-                verbose=False,
-                logger=None,
-            )
-        elif self.crop and self.captions:
-            result_vertical = self.subtitle_clip(
-                clip_vertical,
-                output_file,
-                font_style,
-                font_size,
-                font_color,
-                font_stroke_color,
-                font_stroke_width,
-                font_box_loc=(400, 110),
-                bg_box_loc=(415, 125),
-                bg_color=(0, 0, 0),
-                bg_opacity=1,
-                final_vid_y_pos=900,
-            )
-            result_vertical.write_videofile(
-                f"{output_file.split('.')[0]}_vertical_captions.{output_file.split('.')[1]}",
-                fps=30,
-                threads=5,
-                codec="libx264",
-                verbose=False,
-                logger=None,
-            )
-            os.remove(post_path)
-        elif self.crop and not self.captions:
-            clip_vertical.write_videofile(
-                f"{output_file.split('.')[0]}_vertical.{output_file.split('.')[1]}",
-                fps=30,
-                threads=5,
-                codec="libx264",
-                verbose=False,
-                logger=None,
-            )
+
+        if self.crop:
             os.remove(post_path)
 
+        final_clip.write_videofile(
+            output_file,
+            fps=30,
+            threads=5,
+            codec="libx264",
+            verbose=False,
+            logger=None,
+        )
     def subtitle_clip(
-        self,
-        clip,
-        output_file,
-        font_style="Verdana",
-        font_size=32,
-        font_color="white",
-        font_stroke_color="white",
-        font_stroke_width=1,
-        font_box_loc=(800, 110),
-        bg_box_loc=(815, 125),
-        bg_color=(0, 0, 0),
-        bg_opacity=1,
-        final_vid_y_pos=900,
+            self,
+            clip,
+            output_file,
+            font_style="Verdana",
+            font_size=32,
+            font_color="white",
+            font_stroke_color="white",
+            font_stroke_width=1,
+            font_box_loc=(800, 110),
+            bg_box_loc=(815, 125),
+            bg_color=(0, 0, 0),
+            bg_opacity=1,
+            final_vid_y_pos=900,
     ):
         generator = lambda txt: mp.TextClip(
             txt,
@@ -366,9 +354,9 @@ class Sharetape:
 
         wf = wave.open(self.mono_audio, "rb")
         if (
-            wf.getnchannels() != 1
-            or wf.getsampwidth() != 2
-            or wf.getcomptype() != "NONE"
+                wf.getnchannels() != 1
+                or wf.getsampwidth() != 2
+                or wf.getcomptype() != "NONE"
         ):
             logging.error("Audio file must be WAV format mono PCM.")
             return "", "", ""
@@ -400,7 +388,7 @@ class Sharetape:
             words = jres["result"]
             total_words.extend(words)
             for j in range(0, len(words), WORDS_PER_LINE):
-                line = words[j : j + WORDS_PER_LINE]
+                line = words[j: j + WORDS_PER_LINE]
                 s = srt.Subtitle(
                     index=len(subs),
                     content=" ".join([l["word"] for l in line]),

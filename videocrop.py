@@ -2,15 +2,15 @@ import cv2
 import moviepy.editor as mp
 
 
-def process_video(video_clip, output_filename):
+def process_video(clip, output_filename):
     # Load the cascade classifier for face detection
     cascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
 
     # Get the video properties
-    width = int(video_clip.size[0])
-    height = int(video_clip.size[1])
-    fps = video_clip.fps
-    frame_count = int(video_clip.duration * fps)
+    width = int(clip.size[0])
+    height = int(clip.size[1])
+    fps = clip.fps
+    frame_count = int(clip.duration * fps)
 
     # Variables for tracking the position of the face
     total_faces = 0
@@ -26,7 +26,7 @@ def process_video(video_clip, output_filename):
     # Iterate through the frames of the video to detect the face position
     for i in range(0, frame_count, frame_interval):
         # Get the frame at the given time
-        frame = video_clip.get_frame(i / fps)
+        frame = clip.get_frame(i / fps)
 
         # Detect faces in the frame
         faces = cascade.detectMultiScale(
@@ -52,13 +52,10 @@ def process_video(video_clip, output_filename):
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     out = cv2.VideoWriter(output_filename, fourcc, fps, (out_width, out_height))
 
-    # Reset the video clip to process frames again
-    video_clip.reader.initialize()
-
     # Iterate through the frames of the video
     for i in range(frame_count):
         # Get the frame at the given time
-        frame = video_clip.get_frame(i / fps)
+        frame = clip.get_frame(i / fps)
 
         # Crop the frame around the perfect center of the face
         left = max(avg_x - out_width // 2, 0)
@@ -77,7 +74,7 @@ def process_video(video_clip, output_filename):
     # Release the resources
     out.release()
 
-    input_audio = video_clip.audio
+    input_audio = clip.audio
     output_clip = mp.VideoFileClip(output_filename)
     output_clip = output_clip.set_audio(input_audio)
 
