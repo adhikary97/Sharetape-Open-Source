@@ -4,6 +4,8 @@ This Repo is based off of [Sharetape](https://github.com/adhikary97/Sharetape-Op
 
 This script uses NLP to determine the 10 best topics from a podcast or long form video. Then based on these topics it cuts 30-60 second clips for TikTok, Instagram, or YouTube Shorts. You can even crop the video to 9:16 format and add captions if needed.
 
+I have modified it to that it takes in two videos and cuts them together. cuz overstimulation is the future. lol
+
 ## Demo
 
 [Sharetape Open Source Demo](https://www.youtube.com/watch?v=lPDF0VG9sbk)
@@ -32,6 +34,7 @@ Once downloaded unzip in your project directory.
 ## Execution
 There are 4 flags
 - `-v` or `-video` is the video path. Only `.mov` or `.mp4`
+- `-vb` or `--video_b` is the video path for the second video. Only `.mov` or `.mp4`
 - `-c` or `-crop` crops the video to 9:16 format, default is `False`
 - `-ca` or `-captions` adds captions, default is `False`
 - `-cl` or `-clipLength` is length of clip, default is `30 seconds`

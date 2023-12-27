@@ -224,18 +224,19 @@ class Sharetape:
         end = min(start_time + self.clip_length, video.end)
         clip = video.subclip(start_time, end)
 
+        if self.crop:
+            post_path = (
+                f"{output_file.split('.')[0]}_pre_vertical.{output_file.split('.')[1]}"
+            )
+            aspect_ratio = 9 / 8 if self.video_b else 9 / 16
+            clip = process_video(clip, post_path, aspect_ratio)
+
         if self.video_b:
             video_b = mp.VideoFileClip(self.video_b).resize(height=video.size[1] // 2).volumex(0)
             clip_b = video_b.subclip(start_time, end)
             final_clip = mp.clips_array([[clip], [clip_b]])
         else:
             final_clip = clip
-
-        if self.crop:
-            post_path = (
-                f"{output_file.split('.')[0]}_pre_vertical.{output_file.split('.')[1]}"
-            )
-            final_clip = process_video(final_clip, post_path)
 
         words = self.load_data()
         filtered = []
@@ -280,6 +281,12 @@ class Sharetape:
 
         if self.crop:
             os.remove(post_path)
+
+        # Resize the final video to 9:16 aspect ratio
+        if self.crop:
+            final_height = final_clip.size[1]
+            final_width = int(final_height * 9 / 16)
+            final_clip = final_clip.resize((final_width, final_height))
 
         final_clip.write_videofile(
             output_file,

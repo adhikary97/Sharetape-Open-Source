@@ -1,8 +1,7 @@
 import cv2
 import moviepy.editor as mp
 
-
-def process_video(clip, output_filename):
+def process_video(clip, output_filename, aspect_ratio=9/16):
     # Load the cascade classifier for face detection
     cascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
 
@@ -45,7 +44,7 @@ def process_video(clip, output_filename):
     avg_y = total_y // total_faces if total_faces > 0 else 0
 
     # Calculate the dimensions of the output video
-    out_width = int(height * 9 / 16)
+    out_width = int(height * aspect_ratio)
     out_height = height
 
     # Create the VideoWriter object to write the output video
